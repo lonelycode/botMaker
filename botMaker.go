@@ -10,21 +10,18 @@ import (
 
 var DEFAULT_TEMPLATE = `
 {{if .Instructions}}{{.Instructions}}{{end}}
-
 {{ if .ContextToRender }}Use the following context to help with your response:
-		{{ range $ctx := .ContextToRender }}
+{{ range $ctx := .ContextToRender }}
 Context: {{$ctx}}
 {{ end }}{{ end }}
-
 Human: {{.Body}}
-
 {{ if .DesiredFormat }}Provide your output using the following format:
 {{.DesiredFormat}}{{ end }}
 `
 
 // BotSettings holds configs for OpenAI APIs
 type BotSettings struct {
-	ID               string
+	ID               string // Used when retrieving contexts
 	Model            string
 	Temp             float32
 	TopP             float32
@@ -45,7 +42,7 @@ func NewBotSettings() *BotSettings {
 		PresencePenalty:  0.6,
 		Model:            openai.GPT3TextDavinci003,
 		MaxTokens:        4096,
-		TokenLimit:       8191,
+		TokenLimit:       4096,
 		EmbeddingModel:   openai.AdaEmbeddingV2,
 	}
 }
@@ -60,6 +57,7 @@ type BotPrompt struct {
 	Stop            []string // Human: AI:
 	Template        string
 	RenderedPrompt  string
+	PromptLength    int
 	tpl             *template.Template
 }
 
@@ -120,8 +118,21 @@ func (b *BotPrompt) Prompt(settings *BotSettings) (string, error) {
 
 	// save this
 	b.RenderedPrompt = finalPrompt
+	b.PromptLength, _ = CountTokens(finalPrompt, settings.Model)
 
 	return finalPrompt, nil
+}
+
+func CountTokens(text, model string) (int, error) {
+	// Get tiktoken encoding for the model
+	tke, err := tiktoken.EncodingForModel(model)
+	if err != nil {
+		return 0, err
+	}
+
+	// Count tokens for the question
+	questionTokens := tke.Encode(text, nil, nil)
+	return len(questionTokens), nil
 }
 
 func CheckTokenLimit(text, model string, tokenLimit int) bool {
@@ -134,6 +145,8 @@ func CheckTokenLimit(text, model string, tokenLimit int) bool {
 	// Count tokens for the question
 	questionTokens := tke.Encode(text, nil, nil)
 	currentTokenCount := len(questionTokens)
+
+	//fmt.Printf("TOKENS: %d", len(questionTokens))
 
 	if currentTokenCount >= tokenLimit {
 		return false
@@ -152,7 +165,7 @@ func (b *BotPrompt) AsCompletionRequest(s *BotSettings) (*openai.CompletionReque
 		Model:            s.Model,
 		Prompt:           p,
 		Temperature:      s.Temp,
-		MaxTokens:        s.MaxTokens,
+		MaxTokens:        s.MaxTokens - b.PromptLength,
 		TopP:             s.TopP,
 		FrequencyPenalty: s.FrequencyPenalty,
 		PresencePenalty:  s.PresencePenalty,

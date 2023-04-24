@@ -68,7 +68,7 @@ func GetContexts(b *BotPrompt, s *BotSettings, m Storage, c *OAIClient) ([]strin
 		contextTokens := tke.Encode(contextTexts[i], nil, nil)
 		currentTokenCount += len(contextTokens)
 
-		if currentTokenCount >= s.TokenLimit {
+		if currentTokenCount >= (s.TokenLimit - len(questionTokens)) {
 			break
 		} else if i == len(contextTexts)-1 {
 			b.ContextToRender = append(b.ContextToRender,

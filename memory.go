@@ -19,7 +19,7 @@ type Storage interface {
 type Pinecone struct {
 	APIEndpoint string
 	APIKey      string
-	UUID        string
+	UUID        string // Used when ingesting data
 }
 
 type PineconeVector struct {
@@ -133,7 +133,7 @@ func (p *Pinecone) Retrieve(questionEmbedding []float32, topK int, uuid string) 
 		},
 	})
 
-	log.Println("[retrieve] Querying pinecone namespace:", uuid)
+	// log.Println("[retrieve] Querying pinecone namespace:", uuid)
 	// Send the Pinecone query request
 	pineconeIndexURL := p.APIEndpoint + "/query"
 	req, _ := http.NewRequest("POST", pineconeIndexURL, bytes.NewBuffer(requestBody))

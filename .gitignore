@@ -1,3 +1,6 @@
 data/
 .idea/
+examples/chat/.env
+examples/chat/chat
+.DS_Store
 botMaker_usage_test.go
