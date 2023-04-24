@@ -22,7 +22,7 @@ func GetContexts(b *BotPrompt, s *BotSettings, m Storage, c *OAIClient) ([]strin
 		b.ContextToRender = make([]string, 0)
 	}
 
-	promptNoContext, err := b.renderPrompt(s)
+	promptNoContext, err := b.renderPrompt()
 	if err != nil {
 		return nil, err
 	}

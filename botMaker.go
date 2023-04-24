@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"github.com/pkoukk/tiktoken-go"
 	"github.com/sashabaranov/go-openai"
+	"log"
+	"os"
+	"strings"
 	"text/template"
 )
 
@@ -70,14 +73,28 @@ func NewBotPrompt(promptTemplate string, withClient *OAIClient) *BotPrompt {
 	b := &BotPrompt{
 		OAIClient: withClient,
 	}
-	if promptTemplate == "" {
+
+	b.Template = promptTemplate
+
+	if b.Template == "" {
 		b.Template = DEFAULT_TEMPLATE
+	}
+
+	// load from a file if it's a file
+	pf := strings.HasPrefix(promptTemplate, "file://")
+	if pf {
+		c, err := os.ReadFile(promptTemplate)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		b.Template = string(c)
 	}
 
 	return b
 }
 
-func (b *BotPrompt) renderPrompt(s *BotSettings) (string, error) {
+func (b *BotPrompt) renderPrompt() (string, error) {
 	var out bytes.Buffer
 	err := b.tpl.Execute(&out, b)
 	if err != nil {
@@ -107,7 +124,7 @@ func (b *BotPrompt) Prompt(settings *BotSettings) (string, error) {
 	}
 
 	// render it again
-	finalPrompt, err := b.renderPrompt(settings)
+	finalPrompt, err := b.renderPrompt()
 	if err != nil {
 		return "", err
 	}
