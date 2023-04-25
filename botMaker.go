@@ -104,6 +104,14 @@ func (b *BotPrompt) renderPrompt() (string, error) {
 	return out.String(), nil
 }
 
+func (b *BotPrompt) GetContextsForLastPrompt() []string {
+	if len(b.ContextToRender) > 0 {
+		return b.ContextToRender
+	}
+
+	return []string{}
+}
+
 // Prompt renders the prompt to the prompt template
 func (b *BotPrompt) Prompt(settings *BotSettings) (string, error) {
 	var err error

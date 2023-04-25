@@ -10,6 +10,13 @@ import (
 )
 
 func main() {
+	// Get a namespace
+	if len(os.Args) < 2 {
+		fmt.Println("please provide a namespace for the bot to use")
+		return
+	}
+	namespace := os.Args[1]
+
 	// For the typewriter, not important
 	var min int64 = 5
 	var max int64 = 30
@@ -27,7 +34,7 @@ func main() {
 	// pinecone for context embeddings specifically for this bot -
 	// use different IDs for difference PC namespaces to create
 	// different context-flavours for bots
-	settings.ID = "a45dbe63-4207-419c-bca7-5d940bf3d908"
+	settings.ID = namespace
 
 	// If adding context (additional data outside of GPTs training data), y
 	// you can attach a memory store to query
@@ -66,6 +73,7 @@ func main() {
 
 		// Show the response
 		Typewriter("\n"+resp, min, max)
+		Typewriter(fmt.Sprintf("(Contexts: %d)", len(prompt.GetContextsForLastPrompt())), min, max)
 
 		oldBody := "Human: " + prompt.Body
 		prompt.ContextToRender = append(prompt.ContextToRender, oldBody)
