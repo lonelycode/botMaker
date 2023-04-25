@@ -95,7 +95,7 @@ func (c *OAIClient) CallUnifiedCompletionAPI(settings *BotSettings, prompt *BotP
 	var tokens int
 	var err error
 
-	if settings.Model == openai.GPT3TextDavinci003 {
+	if settings.Model == openai.GPT3TextDavinci003 || settings.Model == openai.CodexCodeDavinci002 || settings.Model == openai.GPT3Davinci {
 		assistantMessage, tokens, err = c.useCompletionAPI(prompt, settings)
 	} else {
 		assistantMessage, tokens, err = c.useChatCompletionAPI(prompt, settings)

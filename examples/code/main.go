@@ -4,22 +4,23 @@ import (
 	"bufio"
 	"fmt"
 	"github.com/lonelycode/botMaker"
+	"github.com/sashabaranov/go-openai"
 	"math/rand"
 	"os"
 	"time"
 )
 
-func main() {
-	// Get a namespace
-	if len(os.Args) < 2 {
-		fmt.Println("please provide a namespace for the bot to use as an argument")
-		return
-	}
-	namespace := os.Args[1]
+// CODE_TEMPLATE is much shorter than the default (chatbot) template as we do not have any embeddings
+var CODE_TEMPLATE = `
+Human: {{.Body}}
+{{ if .DesiredFormat }}Provide your output using the following format:
+{{.DesiredFormat}}{{ end }}
+`
 
+func main() {
 	// For the typewriter, not important
 	var min int64 = 5
-	var max int64 = 30
+	var max int64 = 15
 
 	// Get the system config (API keys and Pinecone endpoint)
 	cfg := botMaker.NewConfigFromEnv()
@@ -27,32 +28,23 @@ func main() {
 	// Set up the OAI API client
 	oai := botMaker.NewOAIClient(cfg.OpenAPIKey)
 
-	// Get the tuning for the bot, we'll use some defaults
+	// Get the tuning for the bot, we'll use specialist code one and up the temp to make answers stricter
 	settings := botMaker.NewBotSettings()
-
-	// We set the ID for the bot as this will be used when querying
-	// pinecone for context embeddings specifically for this bot -
-	// use different IDs for difference PC namespaces to create
-	// different context-flavours for bots
-	settings.ID = namespace
-
-	// If adding context (additional data outside of GPTs training data), y
-	// you can attach a memory store to query
-	settings.Memory = &botMaker.Pinecone{
-		APIEndpoint: cfg.PineconeEndpoint,
-		APIKey:      cfg.PineconeKey,
-	}
+	settings.Model = openai.GPT3Dot5Turbo
+	settings.Temp = 0.9
+	settings.TopP = 0.9
+	settings.MaxTokens = 3500 // need to set this for 3.5 turbo
 
 	// the Prompt holds all the information and logic needed to make a query to OpenAI,
 	// to change the way the prompt is presented to the AI, provide a text/template
 	// (see DEFAULT_TEMPLATE in botMaker.go for the default). this can also be a file
 	// path to the template
-	prompt := botMaker.NewBotPrompt("", oai)
+	prompt := botMaker.NewBotPrompt(CODE_TEMPLATE, oai)
 
 	// Set an initial instruction to the bot
-	prompt.Instructions = "You are an AI chatbot that is funny and helpful"
+	prompt.Instructions = "You are an AI coding assistant that provides concise and helpful answers to users"
 
-	Typewriter("Hi, I'm Globutron, your friendly neighborhood chatbot powered by GPT3. Let's chat!", min, max)
+	Typewriter("Hi, I'm Codurama!, your friendly neighborhood code assistant powered by GPT3. Let's code!!", min, max)
 
 	reader := bufio.NewReader(os.Stdin)
 	for {
@@ -74,7 +66,7 @@ func main() {
 
 		// Show the response
 		Typewriter("\n"+resp, min, max)
-		Typewriter(fmt.Sprintf("(Contexts: %d)", len(prompt.GetContextsForLastPrompt())), min, max)
+		//Typewriter(fmt.Sprintf("(Contexts: %d)", len(prompt.GetContextsForLastPrompt())), min, max)
 
 		oldBody := "Human: " + prompt.Body
 		prompt.ContextToRender = append(prompt.ContextToRender, oldBody)
