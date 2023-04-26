@@ -72,7 +72,7 @@ func learnFile(ns, filename string) error {
 	}
 
 	l := botMaker.Learn{
-		Model:      openai.GPT3TextDavinci003,
+		Model:      openai.GPT3Dot5Turbo,
 		TokenLimit: 8191,
 		ChunkSize:  20,
 		Memory:     pc,
