@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"github.com/lonelycode/botMaker"
+	"github.com/sashabaranov/go-openai"
 	"math/rand"
 	"os"
 	"time"
@@ -35,6 +36,10 @@ func main() {
 	// use different IDs for difference PC namespaces to create
 	// different context-flavours for bots
 	settings.ID = namespace
+	settings.Model = openai.GPT3Dot5Turbo
+	settings.Temp = 0.9
+	settings.TopP = 0.9
+	settings.MaxTokens = 4096 // need to set this for 3.5 turbo
 
 	// If adding context (additional data outside of GPTs training data), y
 	// you can attach a memory store to query
@@ -76,11 +81,25 @@ func main() {
 		Typewriter("\n"+resp, min, max)
 		Typewriter(fmt.Sprintf("(Contexts: %d)", len(prompt.GetContextsForLastPrompt())), min, max)
 
-		oldBody := "Human: " + prompt.Body
-		prompt.ContextToRender = append(prompt.ContextToRender, oldBody)
+		oldBody := prompt.Body
+		if settings.Model != openai.GPT3Dot5Turbo {
+			withRole := "user: " + oldBody
+			prompt.ContextToRender = append(prompt.ContextToRender, withRole)
 
-		// Next make sure the AI's response is added too
-		prompt.ContextToRender = append(prompt.ContextToRender, resp)
+			// Next make sure the AI's response is added too
+			prompt.ContextToRender = append(prompt.ContextToRender, resp)
+		} else {
+			prompt.History = append(prompt.History,
+				&botMaker.RenderContext{
+					Role:    openai.ChatMessageRoleUser,
+					Content: oldBody,
+				},
+				&botMaker.RenderContext{
+					Role:    openai.ChatMessageRoleAssistant,
+					Content: resp,
+				})
+		}
+
 	}
 
 }

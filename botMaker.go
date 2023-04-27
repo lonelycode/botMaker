@@ -12,12 +12,12 @@ import (
 )
 
 var DEFAULT_TEMPLATE = `
-{{if .Instructions}}{{.Instructions}}{{end}}
 {{ if .ContextToRender }}Use the following context to help with your response:
 {{ range $ctx := .ContextToRender }}
-Context: {{$ctx}}
+{{$ctx}}
 {{ end }}{{ end }}
-Human: {{.Body}}
+====
+user: {{.Body}}
 {{ if .DesiredFormat }}Provide your output using the following format:
 {{.DesiredFormat}}{{ end }}
 `
@@ -50,6 +50,11 @@ func NewBotSettings() *BotSettings {
 	}
 }
 
+type RenderContext struct {
+	Role    string
+	Content string
+}
+
 // BotPrompt has the components to make a call to OpenAPI
 type BotPrompt struct {
 	OAIClient       *OAIClient
@@ -58,6 +63,7 @@ type BotPrompt struct {
 	DesiredFormat   string   // Provide your answer using the following output
 	ContextToRender []string // Rendered context (within token limit)
 	Stop            []string // Human: AI:
+	History         []*RenderContext
 	Template        string
 	RenderedPrompt  string
 	PromptLength    int
@@ -71,7 +77,10 @@ type Context struct {
 
 func NewBotPrompt(promptTemplate string, withClient *OAIClient) *BotPrompt {
 	b := &BotPrompt{
-		OAIClient: withClient,
+		OAIClient:       withClient,
+		ContextToRender: make([]string, 0),
+		Stop:            make([]string, 0),
+		History:         make([]*RenderContext, 0),
 	}
 
 	b.Template = promptTemplate
@@ -109,7 +118,7 @@ func (b *BotPrompt) GetContextsForLastPrompt() []string {
 		return b.ContextToRender
 	}
 
-	return []string{}
+	return make([]string, 0)
 }
 
 // Prompt renders the prompt to the prompt template
@@ -204,22 +213,42 @@ func (b *BotPrompt) AsChatCompletionRequest(s *BotSettings) (*openai.ChatComplet
 		return nil, err
 	}
 
-	messages := []openai.ChatCompletionMessage{
-		{
-			Role:    "system",
-			Content: b.Instructions,
-		},
-		{
-			Role:    openai.ChatMessageRoleUser,
-			Content: p,
-		},
+	var messages = make([]openai.ChatCompletionMessage, 0)
+	// Instructions
+	messages = append(messages, openai.ChatCompletionMessage{
+		Role:    openai.ChatMessageRoleSystem,
+		Content: b.Instructions,
+	})
+
+	// Context
+	for i, _ := range b.History {
+		messages = append(messages, openai.ChatCompletionMessage{
+			Role:    b.History[i].Role,
+			Content: b.History[i].Content,
+		})
 	}
+
+	// Prompt
+	messages = append(messages, openai.ChatCompletionMessage{
+		Role:    openai.ChatMessageRoleUser,
+		Content: p,
+	})
+
+	numTokens := 1 // odd, but necessary
+	for _, m := range messages {
+		numTokens += 4
+		rC, _ := CountTokens(m.Role, s.Model)
+		numTokens += rC
+		cC, _ := CountTokens(m.Content, s.Model)
+		numTokens += cC
+	}
+	numTokens += 2
 
 	return &openai.ChatCompletionRequest{
 		Model:            s.Model,
 		Messages:         messages,
 		Temperature:      s.Temp,
-		MaxTokens:        s.MaxTokens,
+		MaxTokens:        s.MaxTokens - numTokens,
 		TopP:             s.TopP,
 		FrequencyPenalty: s.FrequencyPenalty,
 		PresencePenalty:  s.PresencePenalty,
