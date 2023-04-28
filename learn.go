@@ -154,7 +154,7 @@ func (l *Learn) CreateChunks(fileContent, title string) []Chunk {
 		text += " " + sentences[si].Text
 		end = start + len(text)
 
-		if c == l.ChunkSize || (c < l.ChunkSize && si == len(sentences)) {
+		if c == l.ChunkSize || (c < l.ChunkSize && si == len(sentences)-1) {
 			if CheckTokenLimit(text, l.Model, l.TokenLimit) {
 				// only write chunks that are ok
 				newData = append(newData, Chunk{
