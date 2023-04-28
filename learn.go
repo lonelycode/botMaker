@@ -87,6 +87,30 @@ func (l *Learn) ProcessPDFFile(path string) (string, string, error) {
 	return f.Name(), text, nil
 }
 
+func (l *Learn) Learn(contents, title string) (int, error) {
+	chunks := l.CreateChunks(contents, title)
+
+	embeddings, err := l.Client.getEmbeddingsForData(chunks, 100, openai.AdaEmbeddingV2)
+	if err != nil {
+		return 0, fmt.Errorf("error getting embeddings: %v", err)
+	}
+
+	log.Printf("[learn] total chunks: %d", len(chunks))
+	log.Printf("[learn] total embeddings: %d", len(embeddings))
+	if len(embeddings) == 0 {
+		log.Println("no embeddings in this data, skipping")
+		return 0, nil
+	}
+
+	// Send the embeddings to memory
+	err = l.Memory.UploadEmbeddings(embeddings, chunks)
+	if err != nil {
+		return 0, fmt.Errorf("error upserting embeddings to memory: %v", err)
+	}
+
+	return len(embeddings), nil
+}
+
 // FromFile processes a file to learn into an OpenAI memory store, returns number of embeddings
 // created and an error if failed
 func (l *Learn) FromFile(path string) (int, error) {
@@ -109,27 +133,7 @@ func (l *Learn) FromFile(path string) (int, error) {
 		return 0, err
 	}
 
-	chunks := l.CreateChunks(contents, title)
-
-	embeddings, err := l.Client.getEmbeddingsForData(chunks, 100, openai.AdaEmbeddingV2)
-	if err != nil {
-		return 0, fmt.Errorf("error getting embeddings: %v", err)
-	}
-
-	log.Printf("[learn] total chunks: %d", len(chunks))
-	log.Printf("[learn] total embeddings: %d", len(embeddings))
-	if len(embeddings) == 0 {
-		log.Println("no embeddings in this data, skipping")
-		return 0, nil
-	}
-
-	// Send the embeddings to memory
-	err = l.Memory.UploadEmbeddings(embeddings, chunks)
-	if err != nil {
-		return 0, fmt.Errorf("error upserting embeddings to memory: %v", err)
-	}
-
-	return len(embeddings), nil
+	return l.Learn(contents, title)
 }
 
 // CreateChunks generates uploadable chunks to send to a memory store
