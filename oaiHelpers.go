@@ -57,7 +57,7 @@ func GetContexts(b *BotPrompt, s *BotSettings, m Storage, c *OAIClient) ([]strin
 	contextTitles := make([]string, len(contexts))
 	for i, ctx := range contexts {
 		contextTexts[i] = ctx.Text
-		contextTitles[i] = ctx.Text
+		contextTitles[i] = ctx.Title
 	}
 
 	// So we can reference them elsewhere
