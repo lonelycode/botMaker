@@ -55,9 +55,9 @@ func GetContexts(b *BotPrompt, s *BotSettings, m Storage, c *OAIClient) ([]strin
 	//using top x results from pinecone as the context
 	contextTexts := make([]string, len(contexts))
 	contextTitles := make([]string, len(contexts))
-	for i, ctx := range contexts {
-		contextTexts[i] = ctx.Text
-		contextTitles[i] = ctx.Title
+	for i, _ := range contexts {
+		contextTexts[i] = contexts[i].Text
+		contextTitles[i] = contexts[i].Title
 	}
 
 	// So we can reference them elsewhere
