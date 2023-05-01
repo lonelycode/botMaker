@@ -62,6 +62,7 @@ type BotPrompt struct {
 	Body            string   // The actual prompt
 	DesiredFormat   string   // Provide your answer using the following output
 	ContextToRender []string // Rendered context (within token limit)
+	ContextTitles   []string // titles and references to the content
 	Stop            []string // Human: AI:
 	History         []*RenderContext
 	Template        string
@@ -79,6 +80,7 @@ func NewBotPrompt(promptTemplate string, withClient *OAIClient) *BotPrompt {
 	b := &BotPrompt{
 		OAIClient:       withClient,
 		ContextToRender: make([]string, 0),
+		ContextTitles:   make([]string, 0),
 		Stop:            make([]string, 0),
 		History:         make([]*RenderContext, 0),
 	}

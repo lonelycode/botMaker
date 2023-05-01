@@ -54,9 +54,14 @@ func GetContexts(b *BotPrompt, s *BotSettings, m Storage, c *OAIClient) ([]strin
 	// step 3: Structure the prompt with a context section + question,
 	//using top x results from pinecone as the context
 	contextTexts := make([]string, len(contexts))
+	contextTitles := make([]string, len(contexts))
 	for i, ctx := range contexts {
 		contextTexts[i] = ctx.Text
+		contextTitles[i] = ctx.Text
 	}
+
+	// So we can reference them elsewhere
+	b.ContextTitles = contextTitles
 
 	// Count tokens for the question without context
 	tke, err := tiktoken.EncodingForModel(s.Model)
