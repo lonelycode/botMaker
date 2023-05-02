@@ -36,7 +36,7 @@ func main() {
 	// use different IDs for difference PC namespaces to create
 	// different context-flavours for bots
 	settings.ID = namespace
-	settings.Model = openai.GPT3Dot5Turbo
+	settings.Model = openai.GPT3TextDavinci003
 	settings.Temp = 0.9
 	settings.TopP = 0.9
 	settings.MaxTokens = 4096 // need to set this for 3.5 turbo

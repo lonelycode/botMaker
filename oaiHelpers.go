@@ -112,7 +112,7 @@ func (c *OAIClient) CallUnifiedCompletionAPI(settings *BotSettings, prompt *BotP
 func (c *OAIClient) useChatCompletionAPI(prompt *BotPrompt, s *BotSettings) (string, int, error) {
 	cp, err := prompt.AsChatCompletionRequest(s)
 	if err != nil {
-		return "", 0, nil
+		return "", 0, err
 	}
 
 	resp, err := c.Client.CreateChatCompletion(
