@@ -25,6 +25,7 @@ type Learn struct {
 	ChunkSize  int
 	Memory     Storage
 	Client     *OAIClient
+	GetTitle   TitleGetter
 }
 
 // ExtensionSupported checks if the extension for a given file path is supported by the library, it returns the
@@ -40,6 +41,17 @@ func (l *Learn) ExtensionSupported(path string) (string, bool) {
 	}
 
 	return ext, supported
+}
+
+type TitleGetter func(string) (string, error)
+
+func PathTitleGetter(path string) (string, error) {
+	file, err := os.Stat(path)
+	if err != nil {
+		return "", err
+	}
+
+	return file.Name(), nil
 }
 
 // ProcessTextFile opens and fully reads the file in 'path', it treats the first line that contains text as a title,
@@ -63,7 +75,20 @@ func (l *Learn) ProcessTextFile(path string) (string, string, error) {
 		return "", "", err
 	}
 
-	return file.Name(), contents, nil
+	if l.GetTitle == nil {
+		l.GetTitle = PathTitleGetter
+	}
+
+	title, err := l.GetTitle(path)
+	if err != nil {
+		return "", "", err
+	}
+
+	if title == "" {
+		title = file.Name()
+	}
+
+	return title, contents, nil
 }
 
 // ProcessPDFFile reads a PDF file from the path and extracts the human-readable text, it will also attempt to extract
@@ -84,6 +109,8 @@ func (l *Learn) ProcessPDFFile(path string) (string, string, error) {
 	// Remove extra whitespace and newlines
 	text := strings.TrimSpace(bodyResult)
 
+	// TODO: Make the title getter work against file extensions
+
 	return f.Name(), text, nil
 }
 
@@ -95,6 +122,7 @@ func (l *Learn) Learn(contents, title string) (int, error) {
 		return 0, fmt.Errorf("error getting embeddings: %v", err)
 	}
 
+	log.Printf("[learn] title: %s", title)
 	log.Printf("[learn] total chunks: %d", len(chunks))
 	log.Printf("[learn] total embeddings: %d", len(embeddings))
 	if len(embeddings) == 0 {
@@ -155,6 +183,7 @@ func (l *Learn) CreateChunks(fileContent, title string) []Chunk {
 		end = start + len(text)
 
 		if c == l.ChunkSize || (c < l.ChunkSize && si == len(sentences)-1) {
+			//TODO: Should the chunks be a forced size of the max limit?
 			if CheckTokenLimit(text, l.Model, l.TokenLimit) {
 				// only write chunks that are ok
 				newData = append(newData, Chunk{

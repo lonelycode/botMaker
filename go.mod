@@ -11,8 +11,10 @@ require (
 )
 
 require (
+	github.com/BurntSushi/toml v0.3.1 // indirect
 	github.com/JalfResi/justext v0.0.0-20170829062021-c0282dea7198 // indirect
 	github.com/PuerkitoBio/goquery v1.5.1 // indirect
+	github.com/adrg/frontmatter v0.2.0 // indirect
 	github.com/advancedlogic/GoOse v0.0.0-20191112112754-e742535969c1 // indirect
 	github.com/andybalholm/cascadia v1.2.0 // indirect
 	github.com/araddon/dateparse v0.0.0-20200409225146-d820a6159ab1 // indirect
@@ -38,4 +40,5 @@ require (
 	gonum.org/v1/gonum v0.7.0 // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
 	gopkg.in/neurosnap/sentences.v1 v1.0.6 // indirect
+	gopkg.in/yaml.v2 v2.3.0 // indirect
 )

@@ -2,6 +2,8 @@ package botMaker
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -28,6 +30,11 @@ type PineconeVector struct {
 	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
+func HashFileName(filename string) string {
+	hash := sha256.Sum256([]byte(filename))
+	return hex.EncodeToString(hash[:])
+}
+
 func (p *Pinecone) UploadEmbeddings(embeddings [][]float32, chunks []Chunk) error {
 	// Prepare URL
 	url := p.APIEndpoint + "/vectors/upsert"
@@ -35,16 +42,16 @@ func (p *Pinecone) UploadEmbeddings(embeddings [][]float32, chunks []Chunk) erro
 	// Prepare the vectors
 	vectors := make([]PineconeVector, len(embeddings))
 	for i, embedding := range embeddings {
-		chunk := chunks[i]
+		vectorID := fmt.Sprintf("id-%s-%d", HashFileName(chunks[i].Title), i)
 		vectors[i] = PineconeVector{
-			ID:     fmt.Sprintf("id-%d", i),
+			ID:     vectorID,
 			Values: embedding,
 			Metadata: map[string]string{
-				"file_name": chunk.Title,
-				"start":     strconv.Itoa(chunk.Start),
-				"end":       strconv.Itoa(chunk.End),
-				"title":     chunk.Title,
-				"text":      chunk.Text,
+				"file_name": chunks[i].Title,
+				"start":     strconv.Itoa(chunks[i].Start),
+				"end":       strconv.Itoa(chunks[i].End),
+				"title":     chunks[i].Title,
+				"text":      chunks[i].Text,
 			},
 		}
 	}

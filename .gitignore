@@ -3,6 +3,7 @@ data/
 examples/chat/.env
 examples/chat/chat
 examples/code/code
+examples/learn-custom
 examples/learning/learning
 .DS_Store
 botMaker_usage_test.go
