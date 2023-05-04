@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 func main() {
@@ -26,6 +27,7 @@ func main() {
 		return
 	}
 
+	t0 := time.Now()
 	// Check if it is a directory
 	if fileInfo.IsDir() {
 		files, err := os.ReadDir(fileOrDir)
@@ -51,6 +53,8 @@ func main() {
 			return
 		}
 	}
+
+	fmt.Printf("time to parse corpus: %v", time.Since(t0))
 }
 
 func isHidden(name string) bool {
@@ -74,12 +78,14 @@ func learnFile(ns, filename string) error {
 	l := botMaker.Learn{
 		Model:      openai.GPT3Dot5Turbo,
 		TokenLimit: 8191,
-		ChunkSize:  20,
-		Memory:     pc,
-		Client:     cl,
+		//ChunkSize:  20,
+		ChunkSize: 20,
+		Overlap:   5,
+		Memory:    pc,
+		Client:    cl,
 	}
 
-	count, err := l.FromFile(filename)
+	count, err := l.FromFile(filename, true)
 	if err != nil {
 		log.Fatal(err)
 	}

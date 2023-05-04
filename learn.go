@@ -23,6 +23,7 @@ type Learn struct {
 	Model      string
 	TokenLimit int
 	ChunkSize  int
+	Overlap    int
 	Memory     Storage
 	Client     *OAIClient
 	GetTitle   TitleGetter
@@ -114,8 +115,13 @@ func (l *Learn) ProcessPDFFile(path string) (string, string, error) {
 	return f.Name(), text, nil
 }
 
-func (l *Learn) Learn(contents, title string) (int, error) {
-	chunks := l.CreateChunks(contents, title)
+func (l *Learn) Learn(contents, title string, sentences bool) (int, error) {
+	var chunks []Chunk
+	if sentences {
+		chunks = l.CreateChunks(contents, title)
+	} else {
+		chunks = l.CreateChunksCharacterBased(contents, title)
+	}
 
 	embeddings, err := l.Client.getEmbeddingsForData(chunks, 100, openai.AdaEmbeddingV2)
 	if err != nil {
@@ -141,7 +147,7 @@ func (l *Learn) Learn(contents, title string) (int, error) {
 
 // FromFile processes a file to learn into an OpenAI memory store, returns number of embeddings
 // created and an error if failed
-func (l *Learn) FromFile(path string) (int, error) {
+func (l *Learn) FromFile(path string, sentences bool) (int, error) {
 	ext, supported := l.ExtensionSupported(path)
 	if !supported {
 		return 0, fmt.Errorf("file format is not supported")
@@ -161,11 +167,65 @@ func (l *Learn) FromFile(path string) (int, error) {
 		return 0, err
 	}
 
-	return l.Learn(contents, title)
+	return l.Learn(contents, title, sentences)
+}
+
+func (l *Learn) CreateChunksCharacterBased(fileContent, title string) []Chunk {
+	log.Println("starting character-based chunk generator")
+	newData := make([]Chunk, 0)
+
+	c := 0
+	text := ""
+	start := 0
+	end := 0
+	overlap := l.Overlap
+
+	//overlap := int(float32(l.ChunkSize) * 0.03) // 3% overlap between chunks
+
+	tail := ""
+	for si, _ := range fileContent {
+		text += string(fileContent[si])
+		end = start + len(text)
+
+		if c == l.ChunkSize || (c < l.ChunkSize && si == len(fileContent)-1) {
+			//TODO: Should the chunks be a forced size of the max limit?
+			if CheckTokenLimit(text, l.Model, l.TokenLimit) {
+				// only write chunks that are ok
+				newData = append(newData, Chunk{
+					Start: start,
+					End:   end,
+					Title: title,
+					Text:  tail + text, // include the overlap
+				})
+
+				//fmt.Println("CHUNK CREATED")
+				//fmt.Println("=============")
+				//fmt.Println(tail + text)
+				//fmt.Println("=============")
+
+				if len(text) > overlap {
+					if overlap != 0 {
+						tail = text[len(text)-(overlap)-1 : len(text)]
+					}
+				}
+			} else {
+				log.Println("chunk size too large, skipping chunk")
+			}
+
+			text = ""
+			c = 0
+		}
+
+		c++
+		start = end + 1
+	}
+
+	return newData
 }
 
 // CreateChunks generates uploadable chunks to send to a memory store
 func (l *Learn) CreateChunks(fileContent, title string) []Chunk {
+	log.Println("starting sentence-based chunk generator")
 	doc, err := prose.NewDocument(fileContent)
 	if err != nil {
 		log.Fatal(err)
@@ -178,6 +238,7 @@ func (l *Learn) CreateChunks(fileContent, title string) []Chunk {
 	text := ""
 	start := 0
 	end := 0
+	tailTxt := ""
 	for si, _ := range sentences {
 		text += " " + sentences[si].Text
 		end = start + len(text)
@@ -190,8 +251,21 @@ func (l *Learn) CreateChunks(fileContent, title string) []Chunk {
 					Start: start,
 					End:   end,
 					Title: title,
-					Text:  text,
+					Text:  tailTxt + text,
 				})
+
+				if l.Overlap != 0 {
+					dist := si + 1 - (si + 1) - l.Overlap
+					if dist > len(sentences) {
+						tailTxt = ""
+						tail := sentences[(si+1)-l.Overlap : si+1]
+						for x, _ := range tail {
+							tailTxt += tail[x].Text
+						}
+					}
+
+					//tailTxt = "++++BEGIN++++" + tailTxt + "++++END++++"
+				}
 			} else {
 				log.Println("chunk size too large, skipping chunk")
 			}
