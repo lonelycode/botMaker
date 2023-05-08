@@ -20,13 +20,15 @@ type Chunk struct {
 }
 
 type Learn struct {
-	Model      string
-	TokenLimit int
-	ChunkSize  int
-	Overlap    int
-	Memory     Storage
-	Client     *OAIClient
-	GetTitle   TitleGetter
+	Model           string
+	TokenLimit      int
+	ChunkSize       int
+	Overlap         int
+	Memory          Storage
+	Client          *OAIClient
+	GetTitle        TitleGetter
+	PreProcessBody  PreProcessor
+	PreProcessChunk PreProcessor
 }
 
 // ExtensionSupported checks if the extension for a given file path is supported by the library, it returns the
@@ -36,13 +38,15 @@ func (l *Learn) ExtensionSupported(path string) (string, bool) {
 	supported := false
 
 	switch ext {
-	case ".txt", ".pdf", ".md":
+	case ".txt", ".pdf", ".md", "json", ".yml":
 		supported = true
 		// add new extensions here
 	}
 
 	return ext, supported
 }
+
+type PreProcessor func(string) (string, error)
 
 type TitleGetter func(string) (string, error)
 
@@ -117,6 +121,16 @@ func (l *Learn) ProcessPDFFile(path string) (string, string, error) {
 
 func (l *Learn) Learn(contents, title string, sentences bool) (int, error) {
 	var chunks []Chunk
+
+	if l.PreProcessBody != nil {
+		preProcessed, err := l.PreProcessBody(contents)
+		if err != nil {
+			return 0, err
+		}
+
+		contents = preProcessed
+	}
+
 	if sentences {
 		chunks = l.CreateChunks(contents, title)
 	} else {
@@ -240,18 +254,29 @@ func (l *Learn) CreateChunks(fileContent, title string) []Chunk {
 	end := 0
 	tailTxt := ""
 	for si, _ := range sentences {
+		//fixedText := strings.ReplaceAll(sentences[si].Text, "  ", " ")
 		text += " " + sentences[si].Text
 		end = start + len(text)
 
 		if c == l.ChunkSize || (c < l.ChunkSize && si == len(sentences)-1) {
-			//TODO: Should the chunks be a forced size of the max limit?
-			if CheckTokenLimit(text, l.Model, l.TokenLimit) {
+			toWrite := tailTxt + text
+			// preprocess the chunk
+			if l.PreProcessChunk != nil {
+				preProcessed, err := l.PreProcessChunk(toWrite)
+				if err != nil {
+					log.Printf("[createChunks] failed to preprocess: %v", err)
+					preProcessed = toWrite
+				}
+
+				toWrite = preProcessed
+			}
+			if CheckTokenLimit(toWrite, l.Model, l.TokenLimit) {
 				// only write chunks that are ok
 				newData = append(newData, Chunk{
 					Start: start,
 					End:   end,
 					Title: title,
-					Text:  tailTxt + text,
+					Text:  toWrite,
 				})
 
 				if l.Overlap != 0 {

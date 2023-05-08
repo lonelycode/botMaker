@@ -24,6 +24,7 @@ require (
 	github.com/gigawattio/window v0.0.0-20180317192513-0f5467e35573 // indirect
 	github.com/go-resty/resty/v2 v2.3.0 // indirect
 	github.com/google/uuid v1.3.0 // indirect
+	github.com/grokify/html-strip-tags-go v0.0.0-20200322061010-ea0c1cf2f119 // indirect
 	github.com/jaytaylor/html2text v0.0.0-20200412013138-3577fbdbcff7 // indirect
 	github.com/levigross/exp-html v0.0.0-20120902181939-8df60c69a8f5 // indirect
 	github.com/mattn/go-runewidth v0.0.14 // indirect
@@ -34,6 +35,7 @@ require (
 	github.com/richardlehane/mscfb v1.0.3 // indirect
 	github.com/richardlehane/msoleps v1.0.3 // indirect
 	github.com/rivo/uniseg v0.4.3 // indirect
+	github.com/securisec/go-keywords v0.0.0-20200619134240-769e7273f2ed // indirect
 	github.com/ssor/bom v0.0.0-20170718123548-6386211fdfcf // indirect
 	golang.org/x/net v0.0.0-20210503060351-7fd8e65b6420 // indirect
 	golang.org/x/text v0.7.0 // indirect

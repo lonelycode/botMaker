@@ -183,7 +183,8 @@ func (c *OAIClient) getEmbeddingsForData(chunks []Chunk, batchSize int,
 
 		res, err := c.callEmbeddingAPIWithRetry(texts, embedModel, 3)
 		if err != nil {
-			return nil, err
+			log.Printf("[ERROR] failed to get embeddings ERR: %v, WFILE: %v - SKIPPING", err, chunks[i].Title)
+			continue
 		}
 
 		embeds := make([][]float32, len(res.Data))

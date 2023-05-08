@@ -15,8 +15,9 @@ var DEFAULT_TEMPLATE = `
 {{ if .ContextToRender }}Use the following context to help with your response:
 {{ range $ctx := .ContextToRender }}
 {{$ctx}}
-{{ end }}{{ end }}
-====
+{{ end }}
+===={{ end }}
+
 user: {{.Body}}
 {{ if .DesiredFormat }}Provide your output using the following format:
 {{.DesiredFormat}}{{ end }}
@@ -182,7 +183,7 @@ func CheckTokenLimit(text, model string, tokenLimit int) bool {
 	questionTokens := tke.Encode(text, nil, nil)
 	currentTokenCount := len(questionTokens)
 
-	//fmt.Printf("TOKENS: %d", len(questionTokens))
+	log.Printf("[token count]: %d", len(questionTokens))
 
 	if currentTokenCount >= tokenLimit {
 		return false
@@ -246,11 +247,17 @@ func (b *BotPrompt) AsChatCompletionRequest(s *BotSettings) (*openai.ChatComplet
 	}
 	numTokens += 2
 
+	// can't be 0
+	mtokens := s.MaxTokens - numTokens
+	if mtokens < 1 {
+		return nil, fmt.Errorf("prompt is too long")
+	}
+
 	return &openai.ChatCompletionRequest{
 		Model:            s.Model,
 		Messages:         messages,
 		Temperature:      s.Temp,
-		MaxTokens:        s.MaxTokens - numTokens,
+		MaxTokens:        mtokens,
 		TopP:             s.TopP,
 		FrequencyPenalty: s.FrequencyPenalty,
 		PresencePenalty:  s.PresencePenalty,
