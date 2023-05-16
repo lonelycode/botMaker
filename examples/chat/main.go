@@ -3,11 +3,12 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"github.com/lonelycode/botMaker"
-	"github.com/sashabaranov/go-openai"
 	"math/rand"
 	"os"
 	"time"
+
+	"github.com/lonelycode/botMaker"
+	"github.com/sashabaranov/go-openai"
 )
 
 func main() {
@@ -36,7 +37,7 @@ func main() {
 	// use different IDs for difference PC namespaces to create
 	// different context-flavours for bots
 	settings.ID = namespace
-	settings.Model = openai.GPT3TextDavinci003
+	settings.Model = openai.GPT4
 	settings.Temp = 0.9
 	settings.TopP = 0.9
 	settings.MaxTokens = 4096 // need to set this for 3.5 turbo

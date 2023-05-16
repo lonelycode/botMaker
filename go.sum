@@ -253,6 +253,8 @@ github.com/rogpeppe/go-internal v1.3.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFR
 github.com/russross/blackfriday/v2 v2.0.1/go.mod h1:+Rmxgy9KzJVeS9/2gXHxylqXiyQDYRxCVz55jmeOWTM=
 github.com/sashabaranov/go-openai v1.9.0 h1:NoiO++IISxxJ1pRc0n7uZvMGMake0G+FJ1XPwXtprsA=
 github.com/sashabaranov/go-openai v1.9.0/go.mod h1:lj5b/K+zjTSFxVLijLSTDZuP7adOgerWeFyZLUhAKRg=
+github.com/sbl/ner v0.0.0-20151202110035-036eccba91a2 h1:bUvMtaxAoVkZbXndHPTDb48lOL0aS2L0Zpb+YWK75oU=
+github.com/sbl/ner v0.0.0-20151202110035-036eccba91a2/go.mod h1:jn/ySUmNtrcM624l9YxbdrHEnUQ8FwhjTlgQjWZCIO0=
 github.com/securisec/go-keywords v0.0.0-20200619134240-769e7273f2ed h1:8ZFy/8C1JaByuTedmMDrLgK7dH/7KPKKXiuJDU0KJYg=
 github.com/securisec/go-keywords v0.0.0-20200619134240-769e7273f2ed/go.mod h1:ewJJMApUajQGvQOaQb/QyzTLoL619B5D02XOZlGnlNo=
 github.com/shogo82148/go-shuffle v0.0.0-20180218125048-27e6095f230d/go.mod h1:2htx6lmL0NGLHlO8ZCf+lQBGBHIbEujyywxJArf+2Yc=

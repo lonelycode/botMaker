@@ -35,6 +35,7 @@ require (
 	github.com/richardlehane/mscfb v1.0.3 // indirect
 	github.com/richardlehane/msoleps v1.0.3 // indirect
 	github.com/rivo/uniseg v0.4.3 // indirect
+	github.com/sbl/ner v0.0.0-20151202110035-036eccba91a2 // indirect
 	github.com/securisec/go-keywords v0.0.0-20200619134240-769e7273f2ed // indirect
 	github.com/ssor/bom v0.0.0-20170718123548-6386211fdfcf // indirect
 	golang.org/x/net v0.0.0-20210503060351-7fd8e65b6420 // indirect
