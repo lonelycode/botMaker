@@ -2,10 +2,11 @@ package botMaker
 
 import (
 	"context"
-	"github.com/pkoukk/tiktoken-go"
 	"log"
 	"strings"
 	"time"
+
+	"github.com/pkoukk/tiktoken-go"
 
 	openai "github.com/sashabaranov/go-openai"
 )
@@ -15,9 +16,16 @@ type OpenAIResponse struct {
 	Tokens   int    `json:"tokens"`
 }
 
+type LLMAPIClient interface {
+	CallUnifiedCompletionAPI(settings *BotSettings, prompt *BotPrompt) (string, int, error)
+	CallEmbeddingAPIWithRetry(texts []string, embedModel openai.EmbeddingModel, maxRetries int) (*openai.EmbeddingResponse, error)
+	GetEmbeddingsForData(chunks []Chunk, batchSize int, embedModel openai.EmbeddingModel) ([][]float32, error)
+	GetEmbeddingsForPrompt(text string, embedModel openai.EmbeddingModel) ([]float32, error)
+}
+
 // GetContexts will use OpenAI to get vectors for the prompt, then use Memory to retrieve relevant
 // contexts to include in the query prompt
-func GetContexts(b *BotPrompt, s *BotSettings, m Storage, c *OAIClient) ([]string, error) {
+func GetContexts(b *BotPrompt, s *BotSettings, m Storage, c LLMAPIClient) ([]string, error) {
 	if b.ContextToRender == nil {
 		b.ContextToRender = make([]string, 0)
 	}
@@ -89,7 +97,7 @@ type OAIClient struct {
 	Client *openai.Client
 }
 
-func NewOAIClient(key string) *OAIClient {
+func NewOAIClient(key string) LLMAPIClient {
 	return &OAIClient{
 		Client: openai.NewClient(key),
 	}
@@ -145,7 +153,7 @@ func (c *OAIClient) useCompletionAPI(prompt *BotPrompt, s *BotSettings) (string,
 	return resp.Choices[0].Text, resp.Usage.TotalTokens, nil
 }
 
-func (c *OAIClient) callEmbeddingAPIWithRetry(texts []string, embedModel openai.EmbeddingModel,
+func (c *OAIClient) CallEmbeddingAPIWithRetry(texts []string, embedModel openai.EmbeddingModel,
 	maxRetries int) (*openai.EmbeddingResponse, error) {
 	var err error
 	var res openai.EmbeddingResponse
@@ -166,8 +174,8 @@ func (c *OAIClient) callEmbeddingAPIWithRetry(texts []string, embedModel openai.
 	return nil, err
 }
 
-// getEmbeddingsForData gets embedding vectors for data to be ingested and used for context in queries
-func (c *OAIClient) getEmbeddingsForData(chunks []Chunk, batchSize int,
+// GetEmbeddingsForData gets embedding vectors for data to be ingested and used for context in queries
+func (c *OAIClient) GetEmbeddingsForData(chunks []Chunk, batchSize int,
 	embedModel openai.EmbeddingModel) ([][]float32, error) {
 	embeddings := make([][]float32, 0, len(chunks))
 
@@ -181,7 +189,7 @@ func (c *OAIClient) getEmbeddingsForData(chunks []Chunk, batchSize int,
 
 		log.Printf("[oaiclient] getting embeddings for chunk %d -> %d (of %d)", i, iEnd, len(chunks))
 
-		res, err := c.callEmbeddingAPIWithRetry(texts, embedModel, 3)
+		res, err := c.CallEmbeddingAPIWithRetry(texts, embedModel, 3)
 		if err != nil {
 			log.Printf("[ERROR] failed to get embeddings ERR: %v, WFILE: %v - SKIPPING", err, chunks[i].Title)
 			continue
@@ -200,7 +208,7 @@ func (c *OAIClient) getEmbeddingsForData(chunks []Chunk, batchSize int,
 
 // GetEmbeddingsForPrompt will return embedding vectors for the prompt
 func (c *OAIClient) GetEmbeddingsForPrompt(text string, embedModel openai.EmbeddingModel) ([]float32, error) {
-	res, err := c.callEmbeddingAPIWithRetry([]string{text}, embedModel, 3)
+	res, err := c.CallEmbeddingAPIWithRetry([]string{text}, embedModel, 3)
 	if err != nil {
 		return nil, err
 	}

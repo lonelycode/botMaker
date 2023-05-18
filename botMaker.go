@@ -3,12 +3,13 @@ package botMaker
 import (
 	"bytes"
 	"fmt"
-	"github.com/pkoukk/tiktoken-go"
-	"github.com/sashabaranov/go-openai"
 	"log"
 	"os"
 	"strings"
 	"text/template"
+
+	"github.com/pkoukk/tiktoken-go"
+	"github.com/sashabaranov/go-openai"
 )
 
 var DEFAULT_TEMPLATE = `
@@ -58,7 +59,7 @@ type RenderContext struct {
 
 // BotPrompt has the components to make a call to OpenAPI
 type BotPrompt struct {
-	OAIClient       *OAIClient
+	OAIClient       LLMAPIClient
 	Instructions    string   // You are an AI assistant that is happy, helpful and tries to offer insightful answers
 	Body            string   // The actual prompt
 	DesiredFormat   string   // Provide your answer using the following output
@@ -77,7 +78,7 @@ type Context struct {
 	Title string `json:"title"`
 }
 
-func NewBotPrompt(promptTemplate string, withClient *OAIClient) *BotPrompt {
+func NewBotPrompt(promptTemplate string, withClient LLMAPIClient) *BotPrompt {
 	b := &BotPrompt{
 		OAIClient:       withClient,
 		ContextToRender: make([]string, 0),

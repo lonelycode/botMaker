@@ -2,14 +2,15 @@ package botMaker
 
 import (
 	"bufio"
-	"code.sajari.com/docconv"
 	"fmt"
-	"github.com/jdkato/prose/v2"
-	"github.com/sashabaranov/go-openai"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"code.sajari.com/docconv"
+	"github.com/jdkato/prose/v2"
+	"github.com/sashabaranov/go-openai"
 )
 
 type Chunk struct {
@@ -25,7 +26,7 @@ type Learn struct {
 	ChunkSize       int
 	Overlap         int
 	Memory          Storage
-	Client          *OAIClient
+	Client          LLMAPIClient
 	GetTitle        TitleGetter
 	PreProcessBody  PreProcessor
 	PreProcessChunk PreProcessor
@@ -137,7 +138,7 @@ func (l *Learn) Learn(contents, title string, sentences bool) (int, error) {
 		chunks = l.CreateChunksCharacterBased(contents, title)
 	}
 
-	embeddings, err := l.Client.getEmbeddingsForData(chunks, 100, openai.AdaEmbeddingV2)
+	embeddings, err := l.Client.GetEmbeddingsForData(chunks, 100, openai.AdaEmbeddingV2)
 	if err != nil {
 		return 0, fmt.Errorf("error getting embeddings: %v", err)
 	}
