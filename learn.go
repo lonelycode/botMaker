@@ -10,7 +10,6 @@ import (
 
 	"code.sajari.com/docconv"
 	"github.com/jdkato/prose/v2"
-	"github.com/sashabaranov/go-openai"
 )
 
 type Chunk struct {
@@ -138,7 +137,7 @@ func (l *Learn) Learn(contents, title string, sentences bool) (int, error) {
 		chunks = l.CreateChunksCharacterBased(contents, title)
 	}
 
-	embeddings, err := l.Client.GetEmbeddingsForData(chunks, 100, openai.AdaEmbeddingV2)
+	embeddings, err := l.Client.GetEmbeddingsForData(chunks, 100, l.Client.GetEmbeddingModel())
 	if err != nil {
 		return 0, fmt.Errorf("error getting embeddings: %v", err)
 	}

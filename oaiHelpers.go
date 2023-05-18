@@ -21,6 +21,7 @@ type LLMAPIClient interface {
 	CallEmbeddingAPIWithRetry(texts []string, embedModel openai.EmbeddingModel, maxRetries int) (*openai.EmbeddingResponse, error)
 	GetEmbeddingsForData(chunks []Chunk, batchSize int, embedModel openai.EmbeddingModel) ([][]float32, error)
 	GetEmbeddingsForPrompt(text string, embedModel openai.EmbeddingModel) ([]float32, error)
+	GetEmbeddingModel() openai.EmbeddingModel
 }
 
 // GetContexts will use OpenAI to get vectors for the prompt, then use Memory to retrieve relevant
@@ -101,6 +102,10 @@ func NewOAIClient(key string) LLMAPIClient {
 	return &OAIClient{
 		Client: openai.NewClient(key),
 	}
+}
+
+func (c *OAIClient) GetEmbeddingModel() openai.EmbeddingModel {
+	return openai.AdaEmbeddingV2
 }
 
 func (c *OAIClient) CallUnifiedCompletionAPI(settings *BotSettings, prompt *BotPrompt) (string, int, error) {
