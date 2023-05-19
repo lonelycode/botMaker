@@ -29,6 +29,7 @@ type Learn struct {
 	GetTitle        TitleGetter
 	PreProcessBody  PreProcessor
 	PreProcessChunk PreProcessor
+	ContentSplitter ContentSplitter
 }
 
 // ExtensionSupported checks if the extension for a given file path is supported by the library, it returns the
@@ -49,6 +50,8 @@ func (l *Learn) ExtensionSupported(path string) (string, bool) {
 type PreProcessor func(string) (string, error)
 
 type TitleGetter func(string) (string, error)
+
+type ContentSplitter func(string, string) []Chunk
 
 func PathTitleGetter(path string) (string, error) {
 	file, err := os.Stat(path)
@@ -119,7 +122,7 @@ func (l *Learn) ProcessPDFFile(path string) (string, string, error) {
 	return f.Name(), text, nil
 }
 
-func (l *Learn) Learn(contents, title string, sentences bool) (int, error) {
+func (l *Learn) Learn(contents, title string) (int, error) {
 	var chunks []Chunk
 
 	if l.PreProcessBody != nil {
@@ -131,11 +134,12 @@ func (l *Learn) Learn(contents, title string, sentences bool) (int, error) {
 		contents = preProcessed
 	}
 
-	if sentences {
-		chunks = l.CreateChunks(contents, title)
-	} else {
-		chunks = l.CreateChunksCharacterBased(contents, title)
+	if l.ContentSplitter == nil {
+		l.ContentSplitter = l.CreateChunks // default to sentence-based
 	}
+
+	// Create chunks for upload
+	chunks = l.ContentSplitter(contents, title)
 
 	embeddings, err := l.Client.GetEmbeddingsForData(chunks, 100, l.Client.GetEmbeddingModel())
 	if err != nil {
@@ -161,7 +165,7 @@ func (l *Learn) Learn(contents, title string, sentences bool) (int, error) {
 
 // FromFile processes a file to learn into an OpenAI memory store, returns number of embeddings
 // created and an error if failed
-func (l *Learn) FromFile(path string, sentences bool) (int, error) {
+func (l *Learn) FromFile(path string) (int, error) {
 	ext, supported := l.ExtensionSupported(path)
 	if !supported {
 		return 0, fmt.Errorf("file format is not supported")
@@ -181,7 +185,7 @@ func (l *Learn) FromFile(path string, sentences bool) (int, error) {
 		return 0, err
 	}
 
-	return l.Learn(contents, title, sentences)
+	return l.Learn(contents, title)
 }
 
 func (l *Learn) CreateChunksCharacterBased(fileContent, title string) []Chunk {
@@ -203,7 +207,7 @@ func (l *Learn) CreateChunksCharacterBased(fileContent, title string) []Chunk {
 
 		if c == l.ChunkSize || (c < l.ChunkSize && si == len(fileContent)-1) {
 			//TODO: Should the chunks be a forced size of the max limit?
-			if CheckTokenLimit(text, l.Model, l.TokenLimit) {
+			if l.Client.CheckTokenLimit(text, l.Model, l.TokenLimit) {
 				// only write chunks that are ok
 				newData = append(newData, Chunk{
 					Start: start,
@@ -270,7 +274,7 @@ func (l *Learn) CreateChunks(fileContent, title string) []Chunk {
 
 				toWrite = preProcessed
 			}
-			if CheckTokenLimit(toWrite, l.Model, l.TokenLimit) {
+			if l.Client.CheckTokenLimit(toWrite, l.Model, l.TokenLimit) {
 				// only write chunks that are ok
 				newData = append(newData, Chunk{
 					Start: start,

@@ -17,11 +17,12 @@ type OpenAIResponse struct {
 }
 
 type LLMAPIClient interface {
-	CallUnifiedCompletionAPI(settings *BotSettings, prompt *BotPrompt) (string, int, error)
+	CallCompletionAPI(settings *BotSettings, prompt *BotPrompt) (string, int, error)
 	CallEmbeddingAPIWithRetry(texts []string, embedModel openai.EmbeddingModel, maxRetries int) (*openai.EmbeddingResponse, error)
 	GetEmbeddingsForData(chunks []Chunk, batchSize int, embedModel openai.EmbeddingModel) ([][]float32, error)
 	GetEmbeddingsForPrompt(text string, embedModel openai.EmbeddingModel) ([]float32, error)
 	GetEmbeddingModel() openai.EmbeddingModel
+	CheckTokenLimit(text, model string, tokenLimit int) bool
 }
 
 // GetContexts will use OpenAI to get vectors for the prompt, then use Memory to retrieve relevant
@@ -104,11 +105,31 @@ func NewOAIClient(key string) LLMAPIClient {
 	}
 }
 
+func (c *OAIClient) CheckTokenLimit(text, model string, tokenLimit int) bool {
+	// Get tiktoken encoding for the model
+	tke, err := tiktoken.EncodingForModel(model)
+	if err != nil {
+		return false
+	}
+
+	// Count tokens for the question
+	questionTokens := tke.Encode(text, nil, nil)
+	currentTokenCount := len(questionTokens)
+
+	log.Printf("[token count]: %d", len(questionTokens))
+
+	if currentTokenCount >= tokenLimit {
+		return false
+	}
+
+	return true
+}
+
 func (c *OAIClient) GetEmbeddingModel() openai.EmbeddingModel {
 	return openai.AdaEmbeddingV2
 }
 
-func (c *OAIClient) CallUnifiedCompletionAPI(settings *BotSettings, prompt *BotPrompt) (string, int, error) {
+func (c *OAIClient) CallCompletionAPI(settings *BotSettings, prompt *BotPrompt) (string, int, error) {
 	var assistantMessage string
 	var tokens int
 	var err error

@@ -150,7 +150,7 @@ func (b *BotPrompt) Prompt(settings *BotSettings) (string, error) {
 		return "", err
 	}
 
-	if !CheckTokenLimit(finalPrompt, settings.Model, settings.TokenLimit) {
+	if !b.OAIClient.CheckTokenLimit(finalPrompt, settings.Model, settings.TokenLimit) {
 		return "", fmt.Errorf("prompt is longer than token limit, please shorten your prompt")
 	}
 
@@ -171,26 +171,6 @@ func CountTokens(text, model string) (int, error) {
 	// Count tokens for the question
 	questionTokens := tke.Encode(text, nil, nil)
 	return len(questionTokens), nil
-}
-
-func CheckTokenLimit(text, model string, tokenLimit int) bool {
-	// Get tiktoken encoding for the model
-	tke, err := tiktoken.EncodingForModel(model)
-	if err != nil {
-		return false
-	}
-
-	// Count tokens for the question
-	questionTokens := tke.Encode(text, nil, nil)
-	currentTokenCount := len(questionTokens)
-
-	log.Printf("[token count]: %d", len(questionTokens))
-
-	if currentTokenCount >= tokenLimit {
-		return false
-	}
-
-	return true
 }
 
 func (b *BotPrompt) AsCompletionRequest(s *BotSettings) (*openai.CompletionRequest, error) {

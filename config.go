@@ -1,12 +1,13 @@
 package botMaker
 
 import (
-	"github.com/caarlos0/env/v8"
 	"log"
+
+	"github.com/caarlos0/env/v8"
 )
 
 type Config struct {
-	OpenAPIKey string `env:"OPEN_API_KEY,required"`
+	LLMAPIKey string `env:"LLM_API_KEY,required"`
 
 	PineconeKey      string `env:"PINECONE_KEY"`
 	PineconeEndpoint string `env:"PINECONE_URL"`
