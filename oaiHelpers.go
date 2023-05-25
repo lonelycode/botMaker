@@ -42,8 +42,6 @@ func GetContexts(b *BotPrompt, s *BotSettings, m Storage, c LLMAPIClient) ([]str
 		return nil, err
 	}
 
-	//log.Println("[GetContexts] Question Embedding Length:", len(questionEmbedding))
-
 	// step 2: Query Pinecone using questionEmbedding to get context matches
 	matches, err := m.Retrieve(questionEmbedding, 3, s.ID)
 	if err != nil {
@@ -56,6 +54,9 @@ func GetContexts(b *BotPrompt, s *BotSettings, m Storage, c LLMAPIClient) ([]str
 	// Extract context text and titles from the matches
 	contexts := make([]Context, len(matches))
 	for i, match := range matches {
+		if matches[i].Score < s.MemoryAcceptScore {
+			continue
+		}
 		contexts[i].Text = match.Metadata["text"]
 		contexts[i].Title = match.Metadata["title"]
 	}

@@ -26,29 +26,31 @@ user: {{.Body}}
 
 // BotSettings holds configs for OpenAI APIs
 type BotSettings struct {
-	ID               string // Used when retrieving contexts
-	Model            string
-	Temp             float32
-	TopP             float32
-	FrequencyPenalty float32
-	PresencePenalty  float32
-	MaxTokens        int // Max to receive
-	TokenLimit       int // Max to send
-	EmbeddingModel   openai.EmbeddingModel
-	Memory           Storage
+	ID                string // Used when retrieving contexts
+	Model             string
+	Temp              float32
+	TopP              float32
+	FrequencyPenalty  float32
+	PresencePenalty   float32
+	MaxTokens         int // Max to receive
+	TokenLimit        int // Max to send
+	EmbeddingModel    openai.EmbeddingModel
+	Memory            Storage
+	MemoryAcceptScore float32
 }
 
 // NewBotSettings Returns settings for OpenAI with sane defaults
 func NewBotSettings() *BotSettings {
 	return &BotSettings{
-		Temp:             0.6,
-		TopP:             0.6,
-		FrequencyPenalty: 0.0,
-		PresencePenalty:  0.6,
-		Model:            openai.GPT3TextDavinci003,
-		MaxTokens:        4096,
-		TokenLimit:       4096,
-		EmbeddingModel:   openai.AdaEmbeddingV2,
+		Temp:              0.6,
+		TopP:              0.6,
+		FrequencyPenalty:  0.0,
+		PresencePenalty:   0.6,
+		Model:             openai.GPT3TextDavinci003,
+		MaxTokens:         4096,
+		TokenLimit:        4096,
+		EmbeddingModel:    openai.AdaEmbeddingV2,
+		MemoryAcceptScore: 0.9,
 	}
 }
 

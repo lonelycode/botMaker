@@ -10,6 +10,7 @@ import (
 
 	"code.sajari.com/docconv"
 	"github.com/jdkato/prose/v2"
+	stripmd "github.com/writeas/go-strip-markdown"
 )
 
 type Chunk struct {
@@ -39,7 +40,7 @@ func (l *Learn) ExtensionSupported(path string) (string, bool) {
 	supported := false
 
 	switch ext {
-	case ".txt", ".pdf", ".md", "json", ".yml":
+	case ".txt", ".pdf", ".md":
 		supported = true
 		// add new extensions here
 	}
@@ -60,6 +61,43 @@ func PathTitleGetter(path string) (string, error) {
 	}
 
 	return file.Name(), nil
+}
+
+func (l *Learn) ProcessMarkdown(path string) (string, string, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return "", "", err
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+
+	var contents string
+	for scanner.Scan() {
+		contents += scanner.Text() + "\n"
+	}
+
+	if err := scanner.Err(); err != nil {
+		return "", "", err
+	}
+
+	if l.GetTitle == nil {
+		l.GetTitle = PathTitleGetter
+	}
+
+	title, err := l.GetTitle(path)
+	if err != nil {
+		return "", "", err
+	}
+
+	if title == "" {
+		title = file.Name()
+	}
+
+	// Strip Markdown
+	contents = stripmd.Strip(contents)
+
+	return title, contents, nil
 }
 
 // ProcessTextFile opens and fully reads the file in 'path', it treats the first line that contains text as a title,
@@ -175,8 +213,10 @@ func (l *Learn) FromFile(path string) (int, error) {
 	var err error
 
 	switch ext {
-	case ".txt", ".md", ".text":
+	case ".txt", ".text":
 		title, contents, err = l.ProcessTextFile(path)
+	case ".md":
+		title, contents, err = l.ProcessMarkdown(path)
 	case ".pdf":
 		title, contents, err = l.ProcessPDFFile(path)
 	}
